@@ -1,6 +1,6 @@
 # EffectiveModelSampling
 Code for Effective modeling paper
 
-#License
+# License
 
 This code is provided under a BSD license as part of the Optimization, Inference and Learning for Advanced Networks project, C18014.
