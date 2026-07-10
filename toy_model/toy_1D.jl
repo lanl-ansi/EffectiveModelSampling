@@ -79,7 +79,6 @@ RSsamples, M, accept_, reject_ = RejectionSampling.rejectionSampling(Nsamp, q_ob
 df = DataFrame(sample = RSsamples)
 #CSV.write("POLYNOMIAL1D_SAMPLES.csv", df)
 
-#
 RSsamples_inf, M_inf, accept_inf, reject_inf = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_Gauss)
 df_inf = DataFrame(sample = RSsamples_inf)
 #CSV.write("POLYNOMIAL1D_SAMPLES_inf.csv", df_inf)

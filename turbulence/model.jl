@@ -23,35 +23,10 @@ include("../IMPORTABLES/Moments.jl")
 using .Moments
 include("utils.jl")
 using .Utils
+include("../IMPORTABLES/Tools.jl")
+using .Tools
+Random.seed!(2)
 
-function safe_dataframe(samples::Vector{Vector{Float64}}, D::Int, csv_name::String)
-   if isempty(samples)
-        df = DataFrame()
-        for i in 1:D
-            df[!, Symbol("x$i")] = Float64[]
-        end
-        CSV.write(csv_name, df)
-        return df
-    else
-        mat = Matrix(reduce(hcat, samples)')  # convert Adjoint to Matrix
-        df = DataFrame(mat, :auto)            # automatically name columns x1, x2, ...
-        CSV.write(csv_name, df)
-        return df
-    end
-end
-
-
-# Helper: safely create pairplot from DataFrame
-function safe_pairplot(df::DataFrame, title::String)
-if isempty(df)
-        # blank Figure
-        fig = Figure(resolution=(400,400))
-        ax = Axis(fig[1,1])
-    else
-        fig= pairplot(df)
-    end
-    return fig
-end
 
 L = 6
 D = 3

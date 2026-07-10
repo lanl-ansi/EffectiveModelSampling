@@ -9,7 +9,6 @@ export adam_score_matching!, grad_score_matching, unnormalize_params!
 #########################################
 # unnormalizing params
 #########################################
-# Put this in your MultiDNomial.jl (or a helper file you include)
 # Usage: unnormalize_params!(f, mean_x_vec, std_x_vec)
 function unnormalize_params!(f::PolynomialModel, mean_x::AbstractVector{<:Real}, std_x::AbstractVector{<:Real})
     D = f.D
@@ -109,6 +108,7 @@ function grad_score_matching(f::PolynomialModel, x_samps::Vector{Vector{Float64}
     grad = reduce(+, grads_thread) ./ N
     return grad
 end
+
 #########################################################
 # ADAM step
 #########################################################
@@ -229,12 +229,4 @@ end
 
 
 end
-
-
-
-
-
-
-
-
 
