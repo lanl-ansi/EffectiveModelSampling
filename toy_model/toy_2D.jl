@@ -19,36 +19,10 @@ include("../IMPORTABLES/RejectionSampling.jl")
 using .RejectionSampling
 include("../IMPORTABLES/ADAM_ScoreMatching.jl")
 using .ADAM_ScoreMatching
+include("../IMPORTABLES/Tools.jl")
+using .Tools
 Random.seed!(1234)
 
-function safe_dataframe(samples::Vector{Vector{Float64}}, D::Int, csv_name::String)
-   if isempty(samples)
-        df = DataFrame()
-        for i in 1:D
-            df[!, Symbol("x$i")] = Float64[]
-        end
-        CSV.write(csv_name, df)
-        return df
-    else
-        mat = Matrix(reduce(hcat, samples)')  # convert Adjoint to Matrix
-        df = DataFrame(mat, :auto)            # automatically name columns x1, x2, ...
-        CSV.write(csv_name, df)
-        return df
-    end
-end
-
-
-# Helper: safely create pairplot from DataFrame
-function safe_pairplot(df::DataFrame, title::String)
-    if isempty(df)
-        # blank Figure
-        fig = Figure(resolution=(400,400))
-        ax = Axis(fig[1,1])
-    else
-        fig= pairplot(df)
-    end
-    return fig
-end
 # ---------------------------
 # Discretize a PDF and sample histogram
 # ---------------------------
@@ -124,41 +98,17 @@ p_gmm = MixtureModel(GMM(2, samples_mat; method=:kmeans))
 
 println("Running rejection sampling ...")
 Nsamp = N
-#RSsamples, M, accept_, reject_ = RejectionSampling.rejectionSampling(Nsamp, q_obs, p_gmm)
 
-# Save to CSV
-#df = DataFrame(sample = RSsamples)
-#CSV.write("POLYNOMIAL1D_SAMPLES.csv", df)
-
-#
 RSsamples, M, accept, reject = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm)
-#df_inf = DataFrame(sample = RSsamples)
-#CSV.write("POLYNOMIAL1D_SAMPLES_inf.csv", df_inf)
-
-# ---------------------------
-# Rejection sampling against mixture Gaussian approx
-# ---------------------------
-println("Fitting Mixture Gaussian with D/2=4/2=2 mixtures")
-#K = 5
-#p_gmm = MixtureModel(GMM(K, samples; method=:kmeans))
-
-#println("Running rejection sampling ...")
-#RSsamples_gmm, M_gmm, accept_gmm, reject_gmm = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm)
-
-# Save to CSV
-#df_gmm = DataFrame(sample = RSsamples_gmm)
-#CSV.write("POLYNOMIAL1D_SAMPLES_gmm.csv", df_gmm)
 
 # ---------------------------
 # Plotting
 # ---------------------------
-#RSsamples, M, acc, rej=RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm; checkM=false)
 inferred = hcat(RSsamples)
 samples_matrix_gmm = rand(p_gmm, Nsamp)   # 3 × 10000
 samples_vecvec_gmm = [samples_matrix_gmm[:, i] for i in 1:size(samples_matrix_gmm, 2)]
 df_gmmpdf  = safe_dataframe(samples_vecvec_gmm, D, "gmm.csv")
 
-#df_obs = DataFrame(transpose(samples), :auto)
 fig1 = safe_pairplot(samples, "observed data (10k samples)")
 save("pairplot_true.png", fig1)
 
@@ -199,6 +149,8 @@ final_img = vcat(row_imgs...)
 
 # Save the combined image
 save("toy_2D.png", final_img)
+
+# uncomment if want moments
 #gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "data1.csv")
 #allMoments(gmm, inf, Matrix(obs'), outname="moments_summary11.txt")
 println("finished.")
