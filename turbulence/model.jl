@@ -37,10 +37,6 @@ N1, N2, N3, Dim = size(data)
 samples_mat = reshape(data, N1*N2*N3, Dim)
 samples = DataFrame(samples_mat, :auto)
 N = N1*N2*N3
-#sample_indices = sample(1:nrow(samples_og), N; replace = false)
-#samples = samples_og[sample_indices, :]
-#samples_mat = Matrix(samples)
-#bork
 println("size=", size(samples_mat))
 CSV.write("observation.csv", samples)
 
@@ -63,19 +59,18 @@ q_inf(x) = exp(-f_inf(x))
 # Rejection sampling against Gaussian approx
 # ---------------------------
 println("Fitting Gaussian approx via mean/std of samples ...")
-p_gmm = MixtureModel(GMM(1, samples_mat; method=:kmeans))
+p_gmm = MixtureModel(GMM(L, samples_mat; method=:kmeans))
 
 println("Running rejection sampling ...")
 Nsamp = N
 
-RSsamples, M, accept, reject = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm, checkM=false)
+RSsamples, M, accept, reject, mean_acc = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm, checkM=false)
 
 #CSV.write("POLYNOMIAL1D_SAMPLES_inf.csv", df_inf)
 
 # ---------------------------
 # Plotting
 # ---------------------------
-#RSsamples, M, acc, rej=RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm; checkM=false)
 inferred = hcat(RSsamples)
 
 samples_matrix_gmm = rand(p_gmm, Nsamp)   # 3 × 10000
@@ -88,11 +83,11 @@ save("pairplot_inferred.png", fig2)
 
 fig3 = safe_pairplot(df_gmmpdf, "effective gmm pdf (10k samples)\nM=$M")
 save("pairplot_gmm.png", fig3)
- png_files = [
-     "pairplot_true.png",
-     "pairplot_inferred.png",
-     "pairplot_gmm.png"
- ]
+png_files = [
+    "pairplot_true.png",
+    "pairplot_inferred.png",
+    "pairplot_gmm.png"
+]
 
 # Load images
 imgs = [load(file) for file in png_files]
@@ -119,6 +114,7 @@ final_img = vcat(row_imgs...)
 
 # Save the combined image
 save("turbulence.png", final_img)
-gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "observation.csv")
-allMoments(gmm, inf, obs, outname="moments_summary.txt")
+println("mean_acceptance=", mean_acc)
+#gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "observation.csv")
+#allMoments(gmm, inf, obs, outname="moments_summary.txt")
 println("finished.")

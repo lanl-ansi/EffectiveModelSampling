@@ -68,33 +68,33 @@ q_inf(x) = exp(-f_inf(x))
 # ---------------------------
 # Rejection sampling against Gaussian approx
 # ---------------------------
-println("Fitting Gaussian approx via mean/std of samples ...")
-p_Gauss = fit(Normal, samples)
+#println("Fitting Gaussian approx via mean/std of samples ...")
+#p_Gauss = fit(Normal, samples)
 
-println("Running rejection sampling ...")
+#println("Running rejection sampling ...")
 Nsamp = 10000
-RSsamples, M, accept_, reject_ = RejectionSampling.rejectionSampling(Nsamp, q_obs, p_Gauss)
+#RSsamples, M, accept_, reject_, mean_accept_ = RejectionSampling.rejectionSampling(Nsamp, q_obs, p_Gauss)
 
 # Save to CSV
-df = DataFrame(sample = RSsamples)
+#df = DataFrame(sample = RSsamples)
 #CSV.write("POLYNOMIAL1D_SAMPLES.csv", df)
 
-RSsamples_inf, M_inf, accept_inf, reject_inf = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_Gauss)
-df_inf = DataFrame(sample = RSsamples_inf)
+#RSsamples_inf, M_inf, accept_inf, reject_inf, mean_accept_inf_ = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_Gauss)
+#df_inf = DataFrame(sample = RSsamples_inf)
 #CSV.write("POLYNOMIAL1D_SAMPLES_inf.csv", df_inf)
 
 # ---------------------------
 # Rejection sampling against mixture Gaussian approx
 # ---------------------------
-println("Fitting Mixture Gaussian with D/2=4/2=2 mixtures")
-K = 5
+println("Fitting Mixture Gaussian")
+K = 4
 p_gmm = MixtureModel(GMM(K, samples; method=:kmeans))
 
 println("Running rejection sampling ...")
-RSsamples_gmm, M_gmm, accept_gmm, reject_gmm = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm)
+RSsamples_gmm, M_gmm, accept_gmm, reject_gmm, mean_acc_prob = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm)
 
 # Save to CSV
-df_gmm = DataFrame(sample = RSsamples_gmm)
+#df_gmm = DataFrame(sample = RSsamples_gmm)
 #CSV.write("POLYNOMIAL1D_SAMPLES_gmm.csv", df_gmm)
 
 # ---------------------------
@@ -123,6 +123,7 @@ histogram!([x[1] for x in RSsamples_gmm] , bins=100, label="exp(-f_inferred)/Z_i
 
 plt = plot(plt1, plt2, plt3, plt4, layout=(2,2), dpi=1600)
 println("finishing")
+println("mean_acceptance_probability=", mean_acc_prob)
 savefig(plt, "toy1d.png")
 display(plt)
 

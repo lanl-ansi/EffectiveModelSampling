@@ -73,6 +73,7 @@ D = 2
 samples_ = sampleHist(midpts, pdf_vals, range, N)
 samples_mat = [s[j] for s in samples_, j in 1:2]
 samples = DataFrame(samples_mat, :auto)
+#samples =  CSV.read("2Dsamples.csv", DataFrame)
 samples_mat = Matrix(samples)
 
 fig1 = safe_pairplot(samples, "observed data")
@@ -94,12 +95,12 @@ q_inf(x) = exp(-f_inf(x))
 # Rejection sampling against Gaussian approx
 # ---------------------------
 println("Fitting Gaussian approx via mean/std of samples ...")
-p_gmm = MixtureModel(GMM(2, samples_mat; method=:kmeans))
+p_gmm = MixtureModel(GMM(4, samples_mat; method=:kmeans))
 
 println("Running rejection sampling ...")
 Nsamp = N
 
-RSsamples, M, accept, reject = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm)
+RSsamples, M, accept, reject, mean_acc = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm)
 
 # ---------------------------
 # Plotting
@@ -116,7 +117,7 @@ df_inf = safe_dataframe(RSsamples, D, "inferred.csv")
 fig2 = safe_pairplot(df_inf, "inferred data (10k samples)")
 save("pairplot_inferred.png", fig2)
 
-fig3 = safe_pairplot(df_gmmpdf, "effective gmm pdf (10k samples)\nM=$M")
+fig3 = safe_pairplot(df_gmmpdf, "effective gmm pdf (10k samples)")
 save("pairplot_gmm.png", fig3)
 png_files = [
     "pairplot_true.png",
@@ -138,7 +139,8 @@ imgs_corrected = [reverse(img, dims=1) for img in imgs_resized]
 imgs_rotated = [rotr90(img) for img in imgs_corrected]
 
 # Arrange images in 3 rows x 2 columns
-rows, cols = 3, 1
+#rows, cols = 3, 1
+rows, cols = 1, 3
 grid = reshape(imgs_rotated, cols, rows)'  # fill row-wise
 
 # Horizontally concatenate each row
@@ -149,7 +151,7 @@ final_img = vcat(row_imgs...)
 
 # Save the combined image
 save("toy_2D.png", final_img)
-
+println("mean acceptance=", mean_acc)
 # uncomment if want moments
 #gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "data1.csv")
 #allMoments(gmm, inf, Matrix(obs'), outname="moments_summary11.txt")

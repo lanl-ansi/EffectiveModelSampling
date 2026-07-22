@@ -6,7 +6,7 @@ using Distributions
 using GaussianMixtures
 
 export rejectionSampling
-
+println("THREAD NUM REJECTION SAMPLING=", Threads.nthreads())
 # =======================================================
 # Estimate M via thread-parallel ratios
 # =======================================================
@@ -58,6 +58,7 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
 
     # Thread-local storage for accepted samples
     samples_per_thread = [Vector{Vector{Float64}}() for _ in 1:nthreads()]
+    acceptance_probs_per_thread = zeros(Float64, nthreads())
     rngs = [MersenneTwister(rand(UInt)) for _ in 1:nthreads()]
     # Thread-local counters
     accepted_per_thread = zeros(Int, nthreads())
@@ -70,6 +71,7 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
     @threads for t in 1:nthreads()
         rng = rngs[t]
         local_samples = Vector{Vector{Float64}}()
+        local_accept_probs = Float64[]
         n_local = ceil(Int, N / nthreads())
 
         while length(local_samples) < n_local
@@ -81,7 +83,9 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
             if qx == 0.0
                 continue
             end
-            if u < (px / (M * qx))
+            acceptance_prob = px/(M*qx)
+            push!(local_accept_probs, acceptance_prob)
+            if u < acceptance_prob
                 push!(local_samples, x_vec)
                 accepted_per_thread[t] += 1
                 println("samples=", length(local_samples))
@@ -91,21 +95,26 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
         end
         
         samples_per_thread[t] = local_samples
+        acceptance_probs_per_thread[t] = mean(local_accept_probs)
 
         if length(local_samples) % 1000 == 0
             @info "Thread $t: collected $(length(local_samples)) / $n_local samples"
         end
     end
-
+    
     # Combine thread-local samples and trim
     samples = vcat(samples_per_thread...)
     samples = samples[1:N]
+
+    mean_acceptance_prob = mean(acceptance_probs_per_thread)
+
     total_accepted = sum(accepted_per_thread)
     total_rejected = sum(rejected_per_thread)
     println("Rejection sampling done: Generated $N samples (dim=$D)")
     println("Total accepted: $total_accepted, Total rejected: $total_rejected")
+    println("Average acceptance rate: $mean_acceptance_prob")
 
-    return samples, M, total_accepted, total_rejected
+    return samples, M, total_accepted, total_rejected, mean_acceptance_prob
 end
 
 end # module

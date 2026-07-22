@@ -121,8 +121,8 @@ q_inf(x) = exp(-f(x, scoreMatchθ))
 
 println("rejection sampling to obtain p(scorematch theta) from p_Gauss(gaussian est) samples")
 #Nsamp = N#10000
-p_gmm = MixtureModel(GMM(2, Matrix(samples'); method=:kmeans))
-RSsamples, M, acc, rej=RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm; checkM=false)
+p_gmm = MixtureModel(GMM(4, Matrix(samples'); method=:kmeans))
+RSsamples, M, acc, rej, mean_acc=RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm; checkM=false)
 inferred = hcat(RSsamples)
 samples_matrix_gmm = rand(p_gmm, Nsamp)   # 3 × 10000
 samples_vecvec_gmm = [samples_matrix_gmm[:, i] for i in 1:size(samples_matrix_gmm, 2)]
@@ -169,9 +169,22 @@ row_imgs = [hcat(grid[i, :]...) for i in 1:rows]
 final_img = vcat(row_imgs...)
 
 # Save the combined image
-save("phi4.png", final_img)
+save("phi4_3x1.png", final_img)
 
-gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "data1.csv")
-allMoments(gmm, inf, Matrix(obs'), outname="moments_summary11.txt")
+rows, cols = 1, 3
+grid = reshape(imgs_rotated, cols, rows)'  # fill row-wise
+
+# Horizontally concatenate each row
+row_imgs = [hcat(grid[i, :]...) for i in 1:rows]
+
+# Vertically concatenate rows
+final_img = vcat(row_imgs...)
+
+# Save the combined image
+save("phi4_1x3.png", final_img)
+println("mean acceptance=", mean_acc)
+
+#gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "data1.csv")
+#allMoments(gmm, inf, Matrix(obs'), outname="moments_summary11.txt")
 println("finished.")
 
