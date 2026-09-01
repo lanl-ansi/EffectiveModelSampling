@@ -36,6 +36,7 @@ data = datafull[:, :, :, [1,8,9]]
 N1, N2, N3, Dim = size(data)
 samples_mat = reshape(data, N1*N2*N3, Dim)
 samples = DataFrame(samples_mat, :auto)
+bork
 N = N1*N2*N3
 println("size=", size(samples_mat))
 CSV.write("observation.csv", samples)

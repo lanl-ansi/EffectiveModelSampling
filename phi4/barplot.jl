@@ -51,41 +51,6 @@ for block in blocks
     push!(df_gmm, (dataset, gmm_vals...))
     push!(df_inf, (dataset, inf_vals...))
 end
-"""
-#calculate mean + std
-
-#means_gmm = [mean(df_gmm.err1), mean(df_gmm.err2), mean(df_gmm.err3), mean(df_gmm.err4)]
-#means_inf = [mean(df_inf.err1), mean(df_inf.err2), mean(df_inf.err3), mean(df_inf.err4)]
-#stds_gmm  = [std(df_gmm.err1),  std(df_gmm.err2),  std(df_gmm.err3),  std(df_gmm.err4)]
-#stds_inf  = [std(df_inf.err1),  std(df_inf.err2),  std(df_inf.err3),  std(df_inf.err4)]
-
-plt1 = bar(["err1", "err2", "err3", "err4"],
-    means_gmm,
-    yerror = stds_gmm,
-    label = "GMM",
-    xlabel = "Means and standard deviation",
-    ylabel = "Error of moment",
-    alpha = 0.8,
-    bar_width = 0.5
-#    legend = false,
-#    legend = :topright
-)
-
-plt2 = bar(["err1", "err2", "err3", "err4"],
-    means_inf,
-    yerror = stds_inf,
-    label = "INF", 
-    #xlabel = "Means and std",
-    #ylabel = "Moment",
-    alpha = 0.8,
-    #label = "INF",
-    xlabel = "Means and standard deviation",
-    ylabel = "Error of moment",
-    bar_width = 0.5
-#    legend = false
-)
-
-"""
 # ---- compute means + stds ----
 gmm_means = [mean(df_gmm.err1), mean(df_gmm.err2), mean(df_gmm.err3), mean(df_gmm.err4)]
 gmm_stds  = [std(df_gmm.err1),  std(df_gmm.err2),  std(df_gmm.err3),  std(df_gmm.err4)]
