@@ -182,6 +182,7 @@ function adam_score_matching!(f::PolynomialModel, xs::AbstractVector{<:AbstractV
 
     while epoch < max_epochs
         epoch += 1
+        println("epoch=", epoch)
 
         # Shuffle samples each epoch
         shuffled_idxs = randperm(N)
@@ -194,7 +195,6 @@ function adam_score_matching!(f::PolynomialModel, xs::AbstractVector{<:AbstractV
             grad_batch = grad_score_matching(f, batch, z_precomp[shuffled_idxs[batch_start:batch_end]])
             η_t = η_schedule(epoch)
             adam_step!(f.θ, grad_batch, state; η=η_t, β1=β1, β2=β2, ϵ=ϵ, clip_grad=clip_grad)
-            #println("epoch=", epoch, "curr f.θ=", f.θ)
         end
 
         # ------------------------
@@ -204,7 +204,6 @@ function adam_score_matching!(f::PolynomialModel, xs::AbstractVector{<:AbstractV
             loss_val = sum([0.5 * sum(df_dxj(f, precompute_monomials(f, z)[2], j)^2 for j in 1:f.D) -
                 sum(hess_df_dθα(f, precompute_monomials(f, z)[3], k, j) for j in 1:f.D, k in 1:K)
                 for z in z_samps]) / N
-            #@printf("Epoch %d, Score Matching Loss = %.6f, theta = %s\n", epoch, loss_val, string(f.θ))
             @printf("Epoch %d, Score Matching Loss = %.6f\n", epoch, loss_val)
 
             # Convergence check

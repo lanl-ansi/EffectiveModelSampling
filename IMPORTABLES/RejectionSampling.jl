@@ -68,6 +68,7 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
     D = isa(x_samps[1], Number) ? 1 : length(x_samps[1])
 
     # Parallel rejection sampling
+    println("threading!")
     @threads for t in 1:nthreads()
         rng = rngs[t]
         local_samples = Vector{Vector{Float64}}()
@@ -88,7 +89,7 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
             if u < acceptance_prob
                 push!(local_samples, x_vec)
                 accepted_per_thread[t] += 1
-                println("samples=", length(local_samples))
+                #println("samples=", length(local_samples))
             else
                 rejected_per_thread[t] += 1
             end
@@ -97,9 +98,9 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
         samples_per_thread[t] = local_samples
         acceptance_probs_per_thread[t] = mean(local_accept_probs)
 
-        if length(local_samples) % 1000 == 0
-            @info "Thread $t: collected $(length(local_samples)) / $n_local samples"
-        end
+        #if length(local_samples) % 1000 == 0
+        #    @info "Thread $t: collected $(length(local_samples)) / $n_local samples"
+        #end
     end
     
     # Combine thread-local samples and trim
@@ -110,6 +111,9 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
 
     total_accepted = sum(accepted_per_thread)
     total_rejected = sum(rejected_per_thread)
+    
+    mean_acceptance_prob = total_accepted/(total_accepted+total_rejected)
+
     println("Rejection sampling done: Generated $N samples (dim=$D)")
     println("Total accepted: $total_accepted, Total rejected: $total_rejected")
     println("Average acceptance rate: $mean_acceptance_prob")
