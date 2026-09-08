@@ -31,8 +31,9 @@ end
 # =======================================================
 # Rejection sampling (handles 1D and multivariate)
 # =======================================================
-function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
+function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true, exactM=nothing)
     # Helper: safely compute p(x)
+    q_dist = q isa GaussianMixtures.GMM ? MixtureModel(q) : q
     p_func(x) = try
         pdf(p, x)
     catch
@@ -41,10 +42,14 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
 
     # Draw samples for estimating M
     println("Estimating M via parallel sampling...")
-    x_samps = [rand(q) for _ in 1:num_trials]
-    ratios = estimate_ratios_parallel(p_func, q, x_samps)
-    M = isempty(ratios) ? 1.0 : maximum(ratios)
-    if checkM
+    x_samps = [rand(q_dist) for _ in 1:num_trials]
+    if exactM == nothing
+        ratios = estimate_ratios_parallel(p_func, q_dist, x_samps)
+        M = isempty(ratios) ? 1.0 : maximum(ratios)
+    else
+        M = exactM
+    end
+    if checkM && M>1000000
         if M > 1000000
             println("Warning: M too large ($M > 100000). Returning empty sample set.")
             top_vals = sort(ratios; rev=true)[1:min(10, length(ratios))]
@@ -58,9 +63,7 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
 
     # Thread-local storage for accepted samples
     samples_per_thread = [Vector{Vector{Float64}}() for _ in 1:nthreads()]
-    acceptance_probs_per_thread = zeros(Float64, nthreads())
     rngs = [MersenneTwister(rand(UInt)) for _ in 1:nthreads()]
-    # Thread-local counters
     accepted_per_thread = zeros(Int, nthreads())
     rejected_per_thread = zeros(Int, nthreads())
 
@@ -72,46 +75,32 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true)
     @threads for t in 1:nthreads()
         rng = rngs[t]
         local_samples = Vector{Vector{Float64}}()
-        local_accept_probs = Float64[]
         n_local = ceil(Int, N / nthreads())
 
         while length(local_samples) < n_local
-            x = rand(rng, q)
+            x = rand(rng, q_dist)
             x_vec = isa(x, Number) ? [x] : x  # unify 1D and multivariate
             u = rand(rng)
             px = p_func(x)
-            qx = pdf(q, x)
+            qx = pdf(q_dist, x)
             if qx == 0.0
                 continue
             end
-            acceptance_prob = px/(M*qx)
-            push!(local_accept_probs, acceptance_prob)
-            if u < acceptance_prob
+            if u < px/(M*qx) 
                 push!(local_samples, x_vec)
                 accepted_per_thread[t] += 1
-                #println("samples=", length(local_samples))
             else
                 rejected_per_thread[t] += 1
             end
         end
         
         samples_per_thread[t] = local_samples
-        acceptance_probs_per_thread[t] = mean(local_accept_probs)
-
-        #if length(local_samples) % 1000 == 0
-        #    @info "Thread $t: collected $(length(local_samples)) / $n_local samples"
-        #end
     end
     
     # Combine thread-local samples and trim
-    samples = vcat(samples_per_thread...)
-    samples = samples[1:N]
-
-    mean_acceptance_prob = mean(acceptance_probs_per_thread)
-
+    samples = vcat(samples_per_thread...)[1:N]
     total_accepted = sum(accepted_per_thread)
     total_rejected = sum(rejected_per_thread)
-    
     mean_acceptance_prob = total_accepted/(total_accepted+total_rejected)
 
     println("Rejection sampling done: Generated $N samples (dim=$D)")
