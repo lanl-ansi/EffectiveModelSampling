@@ -194,14 +194,14 @@ samples_vecvec_gmm = [samples_matrix_gmm[:, i] for i in 1:size(samples_matrix_gm
 df_gmmpdf  = safe_dataframe(samples_vecvec_gmm, D, "gmm.csv")
 
 df_obs = DataFrame(transpose(samples), :auto)
-fig1 = safe_pairplot(df_obs, "")#"observed data (10k samples)")
+fig1 = safe_pairplot(df_obs, "observation")#"observed data (10k samples)")
 save("pairplot_true.png", fig1)
 
 df_inf = safe_dataframe(RSsamples, D, "inferred.csv")
-fig2 = safe_pairplot(df_inf, "")#"inferred data (10k samples)")
+fig2 = safe_pairplot(df_inf, "inferred")#"inferred data (10k samples)")
 save("pairplot_inferred.png", fig2)
 
-fig3 = safe_pairplot(df_gmmpdf, "")#"effective gmm pdf (10k samples)\nM=$M")
+fig3 = safe_pairplot(df_gmmpdf, "gmm")#"effective gmm pdf (10k samples)\nM=$M")
 save("pairplot_gmm.png", fig3)
 
 png_files = [
