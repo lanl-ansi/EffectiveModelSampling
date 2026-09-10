@@ -49,7 +49,7 @@ function rejectionSampling(N::Int, p, q; num_trials=10^6, checkM=true, exactM=no
     else
         M = exactM
     end
-    if checkM && M>1000000
+    if checkM 
         if M > 1000000
             println("Warning: M too large ($M > 100000). Returning empty sample set.")
             top_vals = sort(ratios; rev=true)[1:min(10, length(ratios))]

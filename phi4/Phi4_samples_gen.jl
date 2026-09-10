@@ -54,6 +54,6 @@ S1 = x_traj[:,1:skipstep:end]
 df = DataFrame(S1, :auto)  # transpose so each row is a sample (optional)
 
 # Save to CSV
-CSV.write("data1.csv", df)
+CSV.write("data2.csv", df)
 fig= pairplot(DataFrame(transpose(S1), :auto))
-save("pairplot_true1.png", fig)
+save("pairplot_true2.png", fig)

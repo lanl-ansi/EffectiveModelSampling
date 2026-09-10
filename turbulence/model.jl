@@ -36,7 +36,6 @@ data = datafull[:, :, :, [1,8,9]]
 N1, N2, N3, Dim = size(data)
 samples_mat = reshape(data, N1*N2*N3, Dim)
 samples = DataFrame(samples_mat, :auto)
-bork
 N = N1*N2*N3
 println("size=", size(samples_mat))
 CSV.write("observation.csv", samples)
@@ -46,7 +45,8 @@ save("pairplot_true.png", fig1)
 # ---------------------------
 # Train polynomial via ADAM_SM
 # ---------------------------
-poly_inf = ADAM_ScoreMatching.MultiDNomial.PolynomialModel(D, L)  # 1D, degree 4 polynomial
+#poly_inf = MultiDNomial.PolynomialModel(D, L)  # 1D, degree 4 polynomial
+poly_inf = ADAM_ScoreMatching.MultiDNomial.PolynomialModel(D, L)
 println("Degree = ", poly_inf.L, "  Dimension=", poly_inf.D)
 println("Training PolynomialModel with ADAM_SM ...")
 samples_vec = [Vector(row) for row in eachrow(samples_mat)]
@@ -66,8 +66,14 @@ println("Running rejection sampling ...")
 Nsamp = N
 
 RSsamples, M, accept, reject, mean_acc = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm, checkM=false)
-
-#CSV.write("POLYNOMIAL1D_SAMPLES_inf.csv", df_inf)
+#RSsamples, M, accept, reject, mean_acc =
+#    RejectionSampling.rejectionSampling(
+#        Nsamp,
+#        q_inf,
+#        p_gmm;
+#        checkM=false,
+#        logp=x -> -f_inf(x),
+#    )
 
 # ---------------------------
 # Plotting

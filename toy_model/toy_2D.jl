@@ -19,9 +19,11 @@ include("../IMPORTABLES/RejectionSampling.jl")
 using .RejectionSampling
 include("../IMPORTABLES/ADAM_ScoreMatching.jl")
 using .ADAM_ScoreMatching
+include("../IMPORTABLES/EffectiveModel.jl")
+using .EffectiveModel
 include("../IMPORTABLES/Tools.jl")
 using .Tools
-Random.seed!(1234)
+Random.seed!(22)
 
 # ---------------------------
 # Discretize a PDF and sample histogram
@@ -29,7 +31,7 @@ Random.seed!(1234)
 function discretizePDF(p_func, x_vals)
     ϵ = x_vals[2]-x_vals[1]
     midpoints_x = [(x_vals[i]+x_vals[i+1])/2 for i in 1:length(x_vals)-1]
-    midpoints = [(x,y) for x in midpoints_x, y in midpoints_x]
+    midpoints = [[x,y] for x in midpoints_x, y in midpoints_x]
     pdf_vals = [p_func(xy) for xy in midpoints]
     Z = sum(pdf_vals)*ϵ*ϵ
     pdf_vals_norm = pdf_vals ./ Z
@@ -50,10 +52,26 @@ function sampleHist(midpts, pdf_vals, x_vals, N)
     return flat_midpts[idx]
 end
 
-# ---------------------------
-# Example: 1D polynomial
-# ---------------------------
 thetaReal =  [0.1, -0.0747442173335889, 0.12353334391668362, -0.00022082666146557226, 0.005843978159800084, 0.1619970188721066, -0.6790678970311284, 0.008353043177697873, 0.0076338132086725225, 0.20888153384651223, -0.004930100636868771, 0.0016801451426953252, 0.0030305984832797806, 0.0033879050992132935, -7.872011403848199e-5]
+
+#thetaReal = [
+#     0.0,    # 1
+#     0.0,    # x₂
+#     1.0,    # x₂²
+#     0.0,    # x₂³
+#     0.02,   # x₂⁴
+#     0.0,    # x₁
+#     0.0,    # x₁x₂
+#     0.0,    # x₁x₂²
+#     0.0,    # x₁x₂³
+#    -1.2,    # x₁²
+#    -0.6,    # x₁²x₂
+#     0.0,    # x₁²x₂²
+#     0.0,    # x₁³
+#     0.0,    # x₁³x₂
+#     0.24,   # x₁⁴
+#]
+
 poly_obs = PolynomialModel(2, 4)
 poly_obs.θ .= thetaReal 
 
@@ -70,10 +88,10 @@ N = 10^5
 L = 4
 D = 2
 
-samples_ = sampleHist(midpts, pdf_vals, range, N)
-samples_mat = [s[j] for s in samples_, j in 1:2]
-samples = DataFrame(samples_mat, :auto)
-#samples =  CSV.read("2Dsamples.csv", DataFrame)
+#samples_ = sampleHist(midpts, pdf_vals, range, N)
+#samples_mat = [s[j] for s in samples_, j in 1:2]
+#samples = DataFrame(samples_mat, :auto)
+samples =  CSV.read("2Dsamples.csv", DataFrame)
 samples_mat = Matrix(samples)
 
 fig1 = safe_pairplot(samples, "observed data")
@@ -81,7 +99,8 @@ save("pairplot_true.png", fig1)
 # ---------------------------
 # Train polynomial via ADAM_SM
 # ---------------------------
-poly_inf = ADAM_ScoreMatching.MultiDNomial.PolynomialModel(2, 4)  # 1D, degree 4 polynomial
+#poly_inf = MultiDNomial.PolynomialModel(2, 4)  # 1D, degree 4 polynomial
+poly_inf = ADAM_ScoreMatching.MultiDNomial.PolynomialModel(D, L)
 println("Training PolynomialModel with ADAM_SM ...")
 samples_vec = [Vector(row) for row in eachrow(samples)]
 adam_score_matching!(poly_inf, samples_vec; η=0.0001, tol_loss=1e-6)
@@ -95,7 +114,7 @@ q_inf(x) = exp(-f_inf(x))
 # Rejection sampling against Gaussian approx
 # ---------------------------
 println("Fitting Gaussian approx via mean/std of samples ...")
-p_gmm = MixtureModel(GMM(4, samples_mat; method=:kmeans))
+p_gmm = EffectiveModel.effectiveModel(4, samples_mat)
 
 println("Running rejection sampling ...")
 Nsamp = N
@@ -110,14 +129,14 @@ samples_matrix_gmm = rand(p_gmm, Nsamp)   # 3 × 10000
 samples_vecvec_gmm = [samples_matrix_gmm[:, i] for i in 1:size(samples_matrix_gmm, 2)]
 df_gmmpdf  = safe_dataframe(samples_vecvec_gmm, D, "gmm.csv")
 
-fig1 = safe_pairplot(samples, "observed data (10k samples)")
+fig1 = safe_pairplot(samples, "Observed data")
 save("pairplot_true.png", fig1)
 
 df_inf = safe_dataframe(RSsamples, D, "inferred.csv")
-fig2 = safe_pairplot(df_inf, "inferred data (10k samples)")
+fig2 = safe_pairplot(df_inf, "Inferred data")
 save("pairplot_inferred.png", fig2)
 
-fig3 = safe_pairplot(df_gmmpdf, "effective gmm pdf (10k samples)")
+fig3 = safe_pairplot(df_gmmpdf, "Effective model")
 save("pairplot_gmm.png", fig3)
 png_files = [
     "pairplot_true.png",
@@ -150,7 +169,7 @@ row_imgs = [hcat(grid[i, :]...) for i in 1:rows]
 final_img = vcat(row_imgs...)
 
 # Save the combined image
-save("toy_2D.png", final_img)
+save("toy2D.png", final_img)
 println("mean acceptance=", mean_acc)
 # uncomment if want moments
 #gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "data1.csv")

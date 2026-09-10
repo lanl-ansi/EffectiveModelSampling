@@ -9,6 +9,8 @@ include("../IMPORTABLES/RejectionSampling.jl")
 using .RejectionSampling
 include("../IMPORTABLES/ADAM_ScoreMatching.jl")
 using .ADAM_ScoreMatching
+include("../IMPORTABLES/EffectiveModel.jl")
+using .EffectiveModel
 Random.seed!(1234)
 # ---------------------------
 # Discretize a PDF and sample histogram
@@ -53,7 +55,8 @@ samples = sampleHist(midpts, pdf_vals, range, N)
 # ---------------------------
 # Train polynomial via ADAM_SM
 # ---------------------------
-poly_inf = ADAM_ScoreMatching.MultiDNomial.PolynomialModel(1, 4)  # 1D, degree 4 polynomial
+#poly_inf = ADAM_ScoreMatching.MultiDNomial.PolynomialModel(1, 4)  # 1D, degree 4 polynomial
+poly_inf = MultiDNomial.PolynomialModel(1, 4)  # 1D, degree 4 polynomial
 println("Training PolynomialModel with ADAM_SM ...")
 samples_vec = [[x] for x in samples]  # convert Float64 → Vector{Float64}
 adam_score_matching!(poly_inf, samples_vec; η=0.0001, tol_loss=1e-4)
@@ -65,30 +68,14 @@ println("Estimated θ (ADAM) = ", poly_inf.θ)
 f_inf(x) = poly_inf([x])
 q_inf(x) = exp(-f_inf(x))
 
-# ---------------------------
-# Rejection sampling against Gaussian approx
-# ---------------------------
-#println("Fitting Gaussian approx via mean/std of samples ...")
-#p_Gauss = fit(Normal, samples)
-
-#println("Running rejection sampling ...")
 Nsamp = 10000
-#RSsamples, M, accept_, reject_, mean_accept_ = RejectionSampling.rejectionSampling(Nsamp, q_obs, p_Gauss)
-
-# Save to CSV
-#df = DataFrame(sample = RSsamples)
-#CSV.write("POLYNOMIAL1D_SAMPLES.csv", df)
-
-#RSsamples_inf, M_inf, accept_inf, reject_inf, mean_accept_inf_ = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_Gauss)
-#df_inf = DataFrame(sample = RSsamples_inf)
-#CSV.write("POLYNOMIAL1D_SAMPLES_inf.csv", df_inf)
 
 # ---------------------------
 # Rejection sampling against mixture Gaussian approx
 # ---------------------------
 println("Fitting Mixture Gaussian")
 K = 4
-p_gmm = MixtureModel(GMM(K, samples; method=:kmeans))
+p_gmm = EffectiveModel.effectiveModel(K, samples)
 
 println("Running rejection sampling ...")
 RSsamples_gmm, M_gmm, accept_gmm, reject_gmm, mean_acc_prob = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm)

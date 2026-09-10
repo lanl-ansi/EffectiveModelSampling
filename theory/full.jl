@@ -21,13 +21,15 @@ delta_total = 0.05
 delta_IS = delta_total / 2
 delta_SM = delta_total / 2
 
-R = 500
+R = 1000
 
-epsilon_vals = range(
-    0.05,
-    1.0,
-    length=30,
-)
+#epsilon_vals = range(
+#    0.05,
+#    1.0,
+#    length=30,
+#)
+epsilon_vals =
+    10 .^ range(log10(0.05), log10(1.0), length=30)
 
 M_vals = unique(
     round.(Int, 10 .^ range(1, 6, length=100))
@@ -437,6 +439,8 @@ plt_M = scatter(
     title="Score-matching sample complexity",
     size=(900, 600),
     dpi=300,
+    xscale=:log10,
+    yscale=:log10,
 )
 
 plot!(
@@ -467,6 +471,8 @@ plt_n = scatter(
     title="Importance-sampling sample complexity",
     size=(900, 600),
     dpi=300,
+    xscale=:log10,
+    yscale=:log10,
 )
 
 plot!(
