@@ -11,7 +11,7 @@ println("THREAD NUM REJECTION SAMPLING=", Threads.nthreads())
 # Estimate M via thread-parallel ratios
 # =======================================================
 function estimate_ratios_parallel(p_func, q, x_samps)
-    ratios_per_thread = [Float64[] for _ in 1:nthreads()]
+    ratios_per_thread = [Float64[] for _ in 1:Threads.maxthreadid()]
 
     @threads for i in 1:length(x_samps)
         tid = threadid()

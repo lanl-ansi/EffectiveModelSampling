@@ -1,0 +1,11 @@
+These are all the packages needed to run this program. Just do:
+
+`julia`
+
+`]`
+
+then copy and paste the below
+
+`add Distributions, Plots, MultivariateStats, Random, CSV, DataFrames, Graphs, GraphPlot, LinearAlgebra, PairPlots, CairoMakie, GaussianMixtures, Plots, 
+Images, ImageMagick, ImageTransformations`
+

@@ -3,7 +3,8 @@ using DataFrames
 using Plots
 
 # --------- Read file ---------
-content = read("toplot_mosum.txt", String)
+#content = read("toplot_mosum.txt", String)
+content = read("moment_summary.txt", String)
 
 # --------- Split into blocks ---------
 blocks = split(content, r"FILE HEADER:\s*")
@@ -84,5 +85,5 @@ xlabel!("Moment")
 ylabel!("RMSE")
 #title!("INF vs GMM  means and standard deviation (side-by-side per error index)")
 
-savefig(p, "side_by_side_barplot.png")
-println("Saved to side_by_side_barplot.png")
+savefig(p, "moments_barplot.png")
+println("Saved to moments_barplot.png")

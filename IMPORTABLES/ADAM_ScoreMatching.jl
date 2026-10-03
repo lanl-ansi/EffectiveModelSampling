@@ -86,7 +86,8 @@ function grad_score_matching(f::PolynomialModel, x_samps::Vector{Vector{Float64}
     N = length(x_samps)
     D = f.D
     K = length(f.α)
-    nthreads = Threads.nthreads()
+    #nthreads = Threads.nthreads()
+    nthreads = Threads.maxthreadid()
     grads_thread = [zeros(Float64, K) for _ in 1:nthreads]
 
     Threads.@threads for i in 1:N
