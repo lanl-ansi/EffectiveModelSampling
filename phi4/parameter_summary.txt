@@ -1,0 +1,20 @@
+parameters
+p = [0.1, 0.3, 0.3]
+n_samples = 10000
+T_burn = 100000
+
+Data 1, 2, 3
+T_burn = 100000
+skipstep = 100000
+
+Data 4, 5, 6
+T_burn = 100000
+skipstep = 10000
+
+Data 7, 8, 9
+T_burn = 10000
+skipstep = 10000
+
+Data 0
+T_burn = 1000
+skipstep = 1000
