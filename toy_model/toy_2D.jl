@@ -131,23 +131,23 @@ RSsamples, M, accept, reject, mean_acc = RejectionSampling.rejectionSampling(Nsa
 # Moments: raw data (Moments.jl) vs importance sampling (ImportanceSampling.jl)
 # ---------------------------
 # raw moment tensors of the observed data (N x D matrix -> D, DxD, DxDxD, DxDxDxD)
-data_m1 = firstMoment(samples_mat)
-data_m2 = secondMoment(samples_mat)
-data_m3 = thirdMoment(samples_mat)
-data_m4 = fourthMoment(samples_mat)
+#data_m1 = firstMoment(samples_mat)
+#data_m2 = secondMoment(samples_mat)
+#data_m3 = thirdMoment(samples_mat)
+#data_m4 = fourthMoment(samples_mat)
  
 # IS moment tensors of the learned density p_θSM, all from ONE set of draws from the GMM proposal.
 # Arguments: target first (q_inf is unnormalized -> self_normalize=true), proposal second.
-is_res = ImportanceSampling.importanceSamplingTensorMoments(Nsamp, q_inf, p_gmm; self_normalize=true)
+#is_res = ImportanceSampling.importanceSamplingTensorMoments(Nsamp, q_inf, p_gmm; self_normalize=true)
  
 # is_res.m1 ... is_res.m4 have the same shapes and indexing as the data tensors
-println("IS effective sample size: ", round(is_res.ess, digits=1), " of ", Nsamp)
-for (r, dm, im) in zip(1:4, (data_m1, data_m2, data_m3, data_m4), (is_res.m1, is_res.m2, is_res.m3, is_res.m4))
-    println("moment $r: RMSE(IS vs data) = ", Moments.getErr(im, dm))   # norm(IS - data)/sqrt(D^r), eq. (17)
-end
-println("data m1 = ", data_m1, " | IS m1 = ", is_res.m1)
-println("data m2 =\n", data_m2, "\nIS m2 =\n", is_res.m2)
-
+#println("IS effective sample size: ", round(is_res.ess, digits=1), " of ", Nsamp)
+#for (r, dm, im) in zip(1:4, (data_m1, data_m2, data_m3, data_m4), (is_res.m1, is_res.m2, is_res.m3, is_res.m4))
+#    println("moment $r: RMSE(IS vs data) = ", Moments.getErr(im, dm))   # norm(IS - data)/sqrt(D^r), eq. (17)
+#end
+#println("data m1 = ", data_m1, " | IS m1 = ", is_res.m1)
+#println("data m2 =\n", data_m2, "\nIS m2 =\n", is_res.m2)
+#
 
 # ---------------------------
 # Plotting

@@ -251,19 +251,19 @@ obsM = Matrix(obs')        # N×D, same convention as the allMoments(...) call (
 # Target FIRST (unnormalized q_inf), proposal SECOND (p_gmm).
 # Z_inf is not available in 16-D (no grid sum as in toy_1D), so the weights are
 # self-normalized, which is the default of this function.
-isres = importanceSamplingTensorMoments(Nsamp, q_inf, p_gmm)
-allMomentsIS(isres, Matrix(obs'); outname="moments_summary11_IS.txt")
+#isres = importanceSamplingTensorMoments(Nsamp, q_inf, p_gmm)
+#allMomentsIS(isres, Matrix(obs'); outname="moments_summary11_IS.txt")
  
-moment = (firstMoment, secondMoment, thirdMoment, fourthMoment)   # from Moments.jl
-is_est = (isres.m1, isres.m2, isres.m3, isres.m4)
+#moment = (firstMoment, secondMoment, thirdMoment, fourthMoment)   # from Moments.jl
+#is_est = (isres.m1, isres.m2, isres.m3, isres.m4)
  
-println("\nRMS error of the E[X^⊗k] tensors vs. the observed data (same metric as allMoments)")
-@printf("%-8s  %14s  %14s  %14s\n", "moment", "gmm", "RS (inferred)", "IS (inferred)")
-for k in 1:4
-    ref = moment[k](obsM)
-    @printf("%-8d  %14.4e  %14.4e  %14.4e\n", k,
-            Moments.getErr(moment[k](gmm), ref),
-            Moments.getErr(moment[k](inf), ref),
-            Moments.getErr(is_est[k], ref))
-end
-@printf("IS effective sample size: %.0f of %d\n", isres.ess, Nsamp)
+#println("\nRMS error of the E[X^⊗k] tensors vs. the observed data (same metric as allMoments)")
+#@printf("%-8s  %14s  %14s  %14s\n", "moment", "gmm", "RS (inferred)", "IS (inferred)")
+#for k in 1:4
+#    ref = moment[k](obsM)
+#    @printf("%-8d  %14.4e  %14.4e  %14.4e\n", k,
+#            Moments.getErr(moment[k](gmm), ref),
+#            Moments.getErr(moment[k](inf), ref),
+#            Moments.getErr(is_est[k], ref))
+#end
+#@printf("IS effective sample size: %.0f of %d\n", isres.ess, Nsamp)
