@@ -11,8 +11,11 @@ include("../IMPORTABLES/RejectionSampling.jl")
 using .RejectionSampling
 include("../IMPORTABLES/Moments.jl")
 using .Moments
+include("../IMPORTABLES/ImportanceSampling.jl")
+using .ImportanceSampling
 include("../IMPORTABLES/Tools.jl")
 using .Tools
+using Printf
 
 # Helper: safely create DataFrame from samples
 # Helper: safely create DataFrame from samples
@@ -224,7 +227,7 @@ imgs_corrected = [reverse(img, dims=1) for img in imgs_resized]
 imgs_rotated = [rotr90(img) for img in imgs_corrected]
 
 # Arrange images in 3 rows x 2 columns
-rows, cols = 3, 1
+rows, cols = 1, 3
 grid = reshape(imgs_rotated, cols, rows)'  # fill row-wise
 
 # Horizontally concatenate each row
@@ -240,3 +243,27 @@ gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "data1.csv")
 allMoments(gmm, inf, Matrix(obs'), outname="moments_summary11.txt")
 println("finished.")
 
+
+ 
+obsM = Matrix(obs')        # N×D, same convention as the allMoments(...) call (obs from getFiles is D×N)
+ 
+# IS moments of the learned model p ∝ exp(-f(x, θ̂)).
+# Target FIRST (unnormalized q_inf), proposal SECOND (p_gmm).
+# Z_inf is not available in 16-D (no grid sum as in toy_1D), so the weights are
+# self-normalized, which is the default of this function.
+isres = importanceSamplingTensorMoments(Nsamp, q_inf, p_gmm)
+allMomentsIS(isres, Matrix(obs'); outname="moments_summary11_IS.txt")
+ 
+moment = (firstMoment, secondMoment, thirdMoment, fourthMoment)   # from Moments.jl
+is_est = (isres.m1, isres.m2, isres.m3, isres.m4)
+ 
+println("\nRMS error of the E[X^⊗k] tensors vs. the observed data (same metric as allMoments)")
+@printf("%-8s  %14s  %14s  %14s\n", "moment", "gmm", "RS (inferred)", "IS (inferred)")
+for k in 1:4
+    ref = moment[k](obsM)
+    @printf("%-8d  %14.4e  %14.4e  %14.4e\n", k,
+            Moments.getErr(moment[k](gmm), ref),
+            Moments.getErr(moment[k](inf), ref),
+            Moments.getErr(is_est[k], ref))
+end
+@printf("IS effective sample size: %.0f of %d\n", isres.ess, Nsamp)
