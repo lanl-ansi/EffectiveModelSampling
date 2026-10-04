@@ -21,6 +21,10 @@ include("../IMPORTABLES/ADAM_ScoreMatching.jl")
 using .ADAM_ScoreMatching
 include("../IMPORTABLES/EffectiveModel.jl")
 using .EffectiveModel
+include("../IMPORTABLES/ImportanceSampling.jl")
+using .ImportanceSampling
+include("../IMPORTABLES/Moments.jl")
+using .Moments
 include("../IMPORTABLES/Tools.jl")
 using .Tools
 Random.seed!(22)
@@ -72,7 +76,8 @@ thetaReal =  [0.1, -0.0747442173335889, 0.12353334391668362, -0.0002208266614655
 #     0.24,   # x₁⁴
 #]
 
-poly_obs = PolynomialModel(2, 4)
+#poly_obs = PolynomialModel(2, 4)
+poly_obs = ADAM_ScoreMatching.MultiDNomial.PolynomialModel(2, 4)
 poly_obs.θ .= thetaReal 
 
 # Define f_obs and q_obs via module functions
@@ -88,11 +93,11 @@ N = 10^5
 L = 4
 D = 2
 
-#samples_ = sampleHist(midpts, pdf_vals, range, N)
-#samples_mat = [s[j] for s in samples_, j in 1:2]
-#samples = DataFrame(samples_mat, :auto)
-samples =  CSV.read("2Dsamples.csv", DataFrame)
-samples_mat = Matrix(samples)
+samples_ = sampleHist(midpts, pdf_vals, range, N)
+samples_mat = [s[j] for s in samples_, j in 1:2]
+samples = DataFrame(samples_mat, :auto)
+#samples =  CSV.read("2Dsamples.csv", DataFrame)
+#samples_mat = Matrix(samples)
 
 fig1 = safe_pairplot(samples, "observed data")
 save("pairplot_true.png", fig1)
@@ -120,6 +125,29 @@ println("Running rejection sampling ...")
 Nsamp = N
 
 RSsamples, M, accept, reject, mean_acc = RejectionSampling.rejectionSampling(Nsamp, q_inf, p_gmm)
+
+
+# ---------------------------
+# Moments: raw data (Moments.jl) vs importance sampling (ImportanceSampling.jl)
+# ---------------------------
+# raw moment tensors of the observed data (N x D matrix -> D, DxD, DxDxD, DxDxDxD)
+data_m1 = firstMoment(samples_mat)
+data_m2 = secondMoment(samples_mat)
+data_m3 = thirdMoment(samples_mat)
+data_m4 = fourthMoment(samples_mat)
+ 
+# IS moment tensors of the learned density p_θSM, all from ONE set of draws from the GMM proposal.
+# Arguments: target first (q_inf is unnormalized -> self_normalize=true), proposal second.
+is_res = ImportanceSampling.importanceSamplingTensorMoments(Nsamp, q_inf, p_gmm; self_normalize=true)
+ 
+# is_res.m1 ... is_res.m4 have the same shapes and indexing as the data tensors
+println("IS effective sample size: ", round(is_res.ess, digits=1), " of ", Nsamp)
+for (r, dm, im) in zip(1:4, (data_m1, data_m2, data_m3, data_m4), (is_res.m1, is_res.m2, is_res.m3, is_res.m4))
+    println("moment $r: RMSE(IS vs data) = ", Moments.getErr(im, dm))   # norm(IS - data)/sqrt(D^r), eq. (17)
+end
+println("data m1 = ", data_m1, " | IS m1 = ", is_res.m1)
+println("data m2 =\n", data_m2, "\nIS m2 =\n", is_res.m2)
+
 
 # ---------------------------
 # Plotting
