@@ -99,6 +99,8 @@ samples = DataFrame(samples_mat, :auto)
 #samples =  CSV.read("2Dsamples.csv", DataFrame)
 #samples_mat = Matrix(samples)
 
+CSV.write("data.csv", DataFrame(permutedims(samples_mat), :auto))   # 2 rows x N columns
+
 fig1 = safe_pairplot(samples, "observed data")
 save("pairplot_true.png", fig1)
 # ---------------------------
@@ -131,23 +133,23 @@ RSsamples, M, accept, reject, mean_acc = RejectionSampling.rejectionSampling(Nsa
 # Moments: raw data (Moments.jl) vs importance sampling (ImportanceSampling.jl)
 # ---------------------------
 # raw moment tensors of the observed data (N x D matrix -> D, DxD, DxDxD, DxDxDxD)
-#data_m1 = firstMoment(samples_mat)
-#data_m2 = secondMoment(samples_mat)
-#data_m3 = thirdMoment(samples_mat)
-#data_m4 = fourthMoment(samples_mat)
+data_m1 = firstMoment(samples_mat)
+data_m2 = secondMoment(samples_mat)
+data_m3 = thirdMoment(samples_mat)
+data_m4 = fourthMoment(samples_mat)
  
 # IS moment tensors of the learned density p_θSM, all from ONE set of draws from the GMM proposal.
 # Arguments: target first (q_inf is unnormalized -> self_normalize=true), proposal second.
-#is_res = ImportanceSampling.importanceSamplingTensorMoments(Nsamp, q_inf, p_gmm; self_normalize=true)
+is_res = ImportanceSampling.importanceSamplingTensorMoments(Nsamp, q_inf, p_gmm; self_normalize=true)
  
 # is_res.m1 ... is_res.m4 have the same shapes and indexing as the data tensors
-#println("IS effective sample size: ", round(is_res.ess, digits=1), " of ", Nsamp)
-#for (r, dm, im) in zip(1:4, (data_m1, data_m2, data_m3, data_m4), (is_res.m1, is_res.m2, is_res.m3, is_res.m4))
-#    println("moment $r: RMSE(IS vs data) = ", Moments.getErr(im, dm))   # norm(IS - data)/sqrt(D^r), eq. (17)
-#end
-#println("data m1 = ", data_m1, " | IS m1 = ", is_res.m1)
-#println("data m2 =\n", data_m2, "\nIS m2 =\n", is_res.m2)
-#
+println("IS effective sample size: ", round(is_res.ess, digits=1), " of ", Nsamp)
+for (r, dm, im) in zip(1:4, (data_m1, data_m2, data_m3, data_m4), (is_res.m1, is_res.m2, is_res.m3, is_res.m4))
+    println("moment $r: RMSE(IS vs data) = ", Moments.getErr(im, dm))   # norm(IS - data)/sqrt(D^r), eq. (17)
+end
+println("data m1 = ", data_m1, " | IS m1 = ", is_res.m1)
+println("data m2 =\n", data_m2, "\nIS m2 =\n", is_res.m2)
+
 
 # ---------------------------
 # Plotting
@@ -199,7 +201,63 @@ final_img = vcat(row_imgs...)
 # Save the combined image
 save("toy2D.png", final_img)
 println("mean acceptance=", mean_acc)
-# uncomment if want moments
-#gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "data1.csv")
-#allMoments(gmm, inf, Matrix(obs'), outname="moments_summary11.txt")
+
+gmm, inf, obs = getFiles("gmm.csv", "inferred.csv", "data.csv")
+allMoments(gmm, inf, Matrix(obs'), outname="moments_summary.txt")
 println("finished.")
+
+obsM = Matrix(obs')        # N×D, same convention as the allMoments(...) call (obs from getFiles is D×N)
+
+# ---------------------------
+# Moments: raw data (Moments.jl) vs importance sampling (ImportanceSampling.jl)
+# ---------------------------
+# raw moment tensors of the observed data (N x D matrix -> D, DxD, DxDxD, DxDxDxD)
+data_m1 = firstMoment(obsM)
+data_m2 = secondMoment(obsM)
+data_m3 = thirdMoment(obsM)
+data_m4 = fourthMoment(obsM)
+
+using Printf
+
+function read_errs(path)
+    gmm = Dict{Int,Float64}(); rej = Dict{Int,Float64}()
+    for line in eachline(path)
+        m = match(r"^err_gmm(\d) = (\S+) \| err_inf\d = (\S+)", line)
+        m === nothing && continue
+        r = parse(Int, m[1])
+        gmm[r] = parse(Float64, m[2])
+        rej[r] = parse(Float64, m[3])
+    end
+    return gmm, rej
+end
+
+gmm_err, rej_err = read_errs("moments_summary.txt")
+
+
+
+# IS moment tensors of the learned density p_θSM, all from ONE set of draws from the GMM proposal.
+# Arguments: target first (q_inf is unnormalized -> self_normalize=true), proposal second.
+is_res = ImportanceSampling.importanceSamplingTensorMoments(Nsamp, q_inf, p_gmm; self_normalize=true)
+
+# is_res.m1 ... is_res.m4 have the same shapes and indexing as the data tensors
+println("IS effective sample size: ", round(is_res.ess, digits=1), " of ", Nsamp)
+for (r, dm, im) in zip(1:4, (data_m1, data_m2, data_m3, data_m4), (is_res.m1, is_res.m2, is_res.m3, is_res.m4))
+    println("moment $r: RMSE(IS vs data) = ", Moments.getErr(im, dm))   # norm(IS - data)/sqrt(D^r), eq. (17)
+end
+println("data m1 = ", data_m1, " | IS m1 = ", is_res.m1)
+println("data m2 =\n", data_m2, "\nIS m2 =\n", is_res.m2)
+open("moments_summary.txt", "a") do io
+    for (r, dm, im) in zip(1:4, (data_m1, data_m2, data_m3, data_m4), (is_res.m1, is_res.m2, is_res.m3, is_res.m4))
+        println(io, "moment $r: RMSE(IS vs data) = ", Moments.getErr(im, dm))
+    end
+end
+
+open("moment.txt", "w") do io
+    @printf(io, "%-8s %-14s %-14s %-14s\n", "moment", "RMSE(GMM)", "RMSE(Rej)", "RMSE(IS)")
+    for (r, dm, im) in zip(1:4, (data_m1, data_m2, data_m3, data_m4),
+                                (is_res.m1, is_res.m2, is_res.m3, is_res.m4))
+        e_is = Moments.getErr(im, dm)
+        @printf(io, "%-8d %-14.6f %-14.6f %-14.6f\n", r, gmm_err[r], rej_err[r], e_is)
+    end
+end
+
