@@ -140,6 +140,19 @@ Z_inf = sum(qvals_inf) * dx
 p_inf(x) = q_inf(x) / Z_inf                   # normalized learned density p_θSM
 n_IS  = Nsamp
 is_moment(k) = ImportanceSampling.importanceSampling(n_IS, p_inf, p_gmm, x -> x^k; verbose=false)
+
+
+# (4) moments of the fitted mixture Gaussian p_gmm itself (the proposal q_GMM),
+#     E_{p_gmm}[X^k] = ∫ x^k p_gmm(x) dx, by numerical integration on the same grid
+#     (normalized by the grid sum, same as theory_moment, so grid truncation affects both equally)
+pvals_gmm = [pdf(p_gmm, x) for x in midpts]
+gmm_moment(k) = sum(midpts .^ k .* pvals_gmm) / sum(pvals_gmm)
+ 
+#println("\nMoments E[X^k]")
+#@printf("%-8s  %-12s  %-12s  %-12s  %-12s\n", "moment", "theoretical", "data", "IS", "GMM")
+#for k in 1:4
+#    @printf("%-8d  %12.4f  %12.4f  %12.4f  %12.4f\n", k, theory_moment(k), data_moment(k), is_moment(k), gmm_moment(k))
+#end
  
 println("\nMoments E[X^k]")
 @printf("%-8s  %-12s  %-12s  %-12s\n", "moment", "theoretical", "data", "IS")
